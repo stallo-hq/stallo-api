@@ -58,13 +58,35 @@ python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\act
 pip install -e ".[dev]"
 
 alembic upgrade head
-uvicorn app.main:app --reload          # http://localhost:8000/docs
+uvicorn app.main:app --reload          # http://localhost:8000/api/v1/docs
 python -m workers.inbound_worker       # in another terminal
 python -m workers.outbound_worker      # in another terminal
 ```
 
 Run the whole stack in containers: `docker compose --profile app up --build`
 Add the WhatsApp provider: `docker compose --profile whatsapp up -d`
+
+## API versioning
+
+Every endpoint lives under a version prefix: `/api/v1/...`. Only `/health` is unversioned.
+
+```
+app/api/v1/router.py   # mounts every module router under /api/v1
+app/modules/*/router.py  # declares paths without a version, e.g. /orders
+```
+
+- OpenAPI schema: `/api/v1/openapi.json` · interactive docs: `/api/v1/docs`
+- Payment and WhatsApp webhooks are versioned too (`/api/v1/webhooks/...`). Configure the providers with the full path.
+
+**What counts as breaking (needs a new version):** removing or renaming an endpoint or field, changing a field's type or meaning, making an optional request field required, changing status codes or error shapes.
+
+**Not breaking (stays in v1):** new endpoints, new optional request fields, new response fields.
+
+**Introducing v2:**
+1. Add `app/api/v2/router.py` and mount it in `app/main.py` under `/api/v2`.
+2. Put the changed endpoints in `router_v2.py` and `schemas_v2.py` inside the affected module. Unchanged endpoints can be included in both versions.
+3. Keep v1 running until `stallo-web` and every webhook provider have moved to v2, then remove it in a separate PR.
+4. Version changes are contract changes (handbook §3.4) and need sign-off from the leads.
 
 ## Common tasks
 
@@ -75,4 +97,4 @@ alembic revision --autogenerate -m "add orders table"
 alembic upgrade head
 ```
 
-The OpenAPI schema at `/openapi.json` is what `stallo-web` generates its API client from. A breaking change to it needs a heads-up to the frontend team.
+The OpenAPI schema at `/api/v1/openapi.json` is what `stallo-web` generates its API client from. A breaking change to it needs a heads-up to the frontend team.
