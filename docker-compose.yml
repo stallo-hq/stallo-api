@@ -1,0 +1,61 @@
+# Local development stack. `docker compose up -d` then run the API/workers locally,
+# or `docker compose --profile app up` to run everything in containers.
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: stallo
+      POSTGRES_PASSWORD: stallo
+      POSTGRES_DB: stallo
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stallo"]
+      interval: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    ports: ["5672:5672", "15672:15672"]   # UI: http://localhost:15672 (guest/guest)
+
+  # WhatsApp linked-device provider. Swap for WAHA if the team chooses it.
+  evolution-api:
+    image: atendai/evolution-api:latest
+    ports: ["8080:8080"]
+    environment:
+      AUTHENTICATION_API_KEY: ${WHATSAPP_API_KEY:-change-me}
+    profiles: ["whatsapp"]
+
+  api:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://stallo:stallo@postgres:5432/stallo
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+    ports: ["8000:8000"]
+    volumes: [".:/app"]
+    depends_on: [postgres, rabbitmq]
+    profiles: ["app"]
+
+  inbound-worker:
+    build: .
+    command: python -m workers.inbound_worker
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://stallo:stallo@postgres:5432/stallo
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+    depends_on: [postgres, rabbitmq]
+    profiles: ["app"]
+
+  outbound-worker:
+    build: .
+    command: python -m workers.outbound_worker
+    env_file: .env
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+    depends_on: [rabbitmq]
+    profiles: ["app"]
+
+volumes:
+  pgdata:

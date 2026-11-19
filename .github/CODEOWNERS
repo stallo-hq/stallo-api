@@ -1,0 +1,23 @@
+# Each path's owners are auto-requested as reviewers. See the org handbook for roles.
+# Anything not listed below defaults to the leads team.
+*                                   @stallo-hq/leads
+
+/app/modules/ingestion/             @stallo-hq/integrations
+/app/modules/sellers/               @stallo-hq/integrations
+/app/messaging/                     @stallo-hq/integrations
+/docker-compose.yml                 @stallo-hq/integrations
+
+/app/modules/orchestrator/          @stallo-hq/ai
+/app/modules/conversations/         @stallo-hq/ai
+
+/app/modules/orders/                @stallo-hq/commerce
+/app/modules/inventory/             @stallo-hq/commerce
+/app/modules/delivery/              @stallo-hq/commerce
+/alembic/                           @stallo-hq/commerce @stallo-hq/leads
+
+/app/modules/payments/              @stallo-hq/payments
+/app/modules/exceptions/            @stallo-hq/payments
+/app/modules/notifications/         @stallo-hq/payments
+/workers/outbound_worker.py         @stallo-hq/payments
+
+/.github/                           @stallo-hq/leads
