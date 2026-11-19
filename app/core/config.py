@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     environment: str = "local"  # local | staging | production
     log_level: str = "INFO"
     cors_origins: list[str] = ["http://localhost:5173"]
+    api_v1_prefix: str = "/api/v1"
 
     database_url: str = "postgresql+asyncpg://stallo:stallo@localhost:5432/stallo"
     rabbitmq_url: str = "amqp://guest:guest@localhost:5672/"

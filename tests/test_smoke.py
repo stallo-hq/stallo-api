@@ -17,6 +17,15 @@ def test_health() -> None:
     assert res.json()["status"] == "ok"
 
 
+def test_routes_are_versioned() -> None:
+    res = client.get("/api/v1/openapi.json")
+    assert res.status_code == 200
+    paths = res.json()["paths"]
+    assert "/api/v1/webhooks/whatsapp" in paths
+    assert all(p.startswith("/api/v1/") or p == "/health" for p in paths)
+    assert client.get("/openapi.json").status_code == 404
+
+
 def _event(**kw) -> WhatsAppWebhookEvent:
     base = dict(
         seller_session_id="s1",
